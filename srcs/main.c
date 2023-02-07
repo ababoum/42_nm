@@ -1,21 +1,28 @@
 #include "../inc/nm.h"
 
-
 char detect_symbol_type(Elf64_Sym *symbol)
 {
     unsigned char type = ELF64_ST_TYPE(symbol->st_info);
     unsigned char bind = ELF64_ST_BIND(symbol->st_info);
 
+    printf("type: %d, bind: %d\n", type, bind);
+
     int is_global = bind == STB_GLOBAL;
 
-    if (type == STT_NOTYPE) {
+    switch (type)
+    {
+    case STT_NOTYPE:
         return ('?');
-    }
-    else if (type == STT_OBJECT) {
-        return ('O');
-    }
-    else if (type == STB_WEAK) {
-        return ('W');
+        break;
+    case STT_OBJECT:
+        return (is_global ? 'D' : 'd');
+        break;
+    case STT_FUNC:
+        return (is_global ? 'T' : 't');
+        break;
+    default:
+        return ('?');
+        break;
     }
 }
 
@@ -35,17 +42,17 @@ void handle_elf64(char *ptr)
     string_table_header = &sections_list[header->e_shstrndx - 1];
     char *string_table_content = (char *)(ptr + string_table_header->sh_offset);
 
-    printf("The number of sections: %d\n", number_of_sections);
-    printf("The string table is at index: %d\n", header->e_shstrndx);
+    // printf("The number of sections: %d\n", number_of_sections);
+    // printf("The string table is at index: %d\n", header->e_shstrndx);
 
     for (int i = 0; i < number_of_sections; ++i)
     {
         section = (Elf64_Shdr *)(ptr + header->e_shoff + (i * header->e_shentsize));
         section_content = (char *)(ptr + section->sh_offset);
-        
+
         if (section->sh_type == SHT_SYMTAB)
         {
-            printf("\nSection number %d is a symbols table\n", i);
+            // printf("\nSection number %d is a symbols table\n", i);
 
             int sym_to_print_count = 0;
 
@@ -61,8 +68,9 @@ void handle_elf64(char *ptr)
                     symbol_list[j].st_shndx == SHN_HIRESERVE)
                     continue;
                 char *sym_name = (char *)(string_table_content + symbol_list[j].st_name);
-                printf("%016lx %s\n", symbol_list[j].st_value, sym_name);
+                printf("%016lx %c %s\n", symbol_list[j].st_value, detect_symbol_type(&symbol_list[j]), sym_name);
                 sym_to_print_count++;
+                printf("The symbol is in the section: %s\n", string_table_content + sections_list[symbol_list[j].st_shndx].sh_name);
             }
             printf("The number of symbols printed: %d\n", sym_to_print_count);
         }
