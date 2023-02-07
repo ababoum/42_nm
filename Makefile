@@ -9,7 +9,7 @@ F_BLUE			= \033[34m
 
 CC			= @gcc
 
-CFLAGS		= -Wall -Wextra -Werror
+CFLAGS		= -Wall -Wextra -Werror -g
 
 NAME		= ft_nm
 
